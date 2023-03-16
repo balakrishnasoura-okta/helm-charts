@@ -1,0 +1,113 @@
+# https://kubernetes.io/docs/concepts/workloads/controllers/deployment/
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pony
+  namespace: default
+  labels:
+    app: pony
+spec:
+  selector:
+    matchLabels:
+      app: pony
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: pony
+    spec:
+      containers:
+      - name: pony
+        image: registry.aue1d.internal/okta-pony:1.40.0-7efc269
+        imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1024Mi
+          limits:
+            cpu: 500m
+            memory: 1024Mi
+        livenessProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 120
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 50
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 120
+          timeoutSeconds: 2
+          successThreshold: 1
+          failureThreshold: 50
+          periodSeconds: 10
+        env:
+        - name: JMX_REMOTE_PORT
+          value: "1100"
+        - name: SPRING_CLOUD_CONFIG_LABEL
+          value: "master"
+        - name: SPRING_CLOUD_CONFIG_ENABLED
+          value: "true"
+        - name: OKTA_CELL_SHORT_NAME
+          value: "on73"
+        - name: SPRING_PROFILES_ACTIVE
+          value: "common_okta.ninja,common_installation_post,common_us_east_1,common_aue1t,common_cell_pre,common_on73,common_cell_post,pony_base,pony_on73"
+        - name: QUADRANT
+          value: "aue1t"
+        - name: CLOUD_CONFIG_BOOTSTRAP_FROM_S3_BUCKET
+          value: ""
+        - name: BOOTSTRAP_DR_S3_AWS_REGION
+          value: "us-west-2"
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+          name: http-port
+        - containerPort: 1100
+          protocol: TCP
+          name: jmx-port
+      
+      - name: ssl-sidecar-pony
+        image: registry.aue1d.internal/microservices-ssl-proxy:1.0.6_1675894440_b6aa507
+        imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            cpu: 500m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi
+        livenessProbe:
+          tcpSocket:
+            port: 18080
+          initialDelaySeconds: 120
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 50
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 18080
+          initialDelaySeconds: 120
+          timeoutSeconds: 2
+          successThreshold: 1
+          failureThreshold: 50
+          periodSeconds: 10
+        env:
+        - name: SERVICE_PORTS
+          value: "8080,1100"
+        ports:
+        - containerPort: 18080
+          protocol: TCP
+          name: service-http
+        - containerPort: 11100
+          protocol: TCP
+          name: service-jmx     
+      restartPolicy: Always

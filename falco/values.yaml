@@ -1,0 +1,18 @@
+name: "falco"
+cell_quadrant: "aue1t"
+okta_cell_shot: "on73"
+image:
+  repository: docker-topic.aue1e.internal
+  github_repo: okta-falco
+  tag: 1.2.5_1678910704_5ecc7ba
+env:
+  QUADRANT: "aue1t"
+  OKTA_CELL_SHORT_NAME: "on73"
+  FALCO_BPF_PROBE: ""
+resources:
+  limits:
+    cpu: 100m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 25Gi

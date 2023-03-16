@@ -1,6 +1,6 @@
 apiVersion: v2
-name: nginx
-description: A Helm chart for Kubernetes
+name: pony
+description: A Helm chart of pony service for Kubernetes
 
 # A chart can be either an 'application' or a 'library' chart.
 #

@@ -1,0 +1,74 @@
+# https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{.Values.name}}
+  namespace: {{.Values.namespace}}
+  labels:
+    app: {{.Values.name}}
+spec:
+  selector:
+    matchLabels:
+      app: {{.Values.name}}
+  template:
+    metadata:
+      labels:
+        app: {{.Values.name}}
+    spec:
+      containers:
+      - name: {{.Values.name}}
+        image: "{{ .Values.image.repository }}/{{ .Values.image.github_repo}}:{{ .Values.image.tag}}"
+        {{- if .Values.env }}
+        env:
+        {{- range $key, $value := .Values.env }}
+        - name: {{ $key }}
+          value: "{{ $value }}"
+        {{- end }}
+        {{- end }}
+        resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: dev
+          mountPath: /host/dev
+          readOnly: true
+        - name: proc
+          mountPath: /host/proc
+          readOnly: true
+        - name: boot
+          mountPath: /host/boot
+          readOnly: true
+        - name: libmodules
+          mountPath: /host/lib/modules
+          readOnly: true
+        - name: usr
+          mountPath: /host/usr
+          readOnly: true
+        - name: etc
+          mountPath: /host/etc
+          readOnly: true
+        - name: logs
+          mountPath: /host/data/logs/falco
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: dev
+        hostPath:
+          path: /dev
+      - name: proc
+        hostPath:
+          path: /proc
+      - name: boot
+        hostPath:
+          path: /boot
+      - name: libmodules
+        hostPath:
+          path: /lib/modules
+      - name: usr
+        hostPath:
+          path: /usr
+      - name: etc
+        hostPath:
+          path: /etc
+      - name: logs
+        emptyDir: {}

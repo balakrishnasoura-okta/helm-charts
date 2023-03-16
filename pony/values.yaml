@@ -1,0 +1,102 @@
+
+replicaCount: 2
+name: pony
+cell_quadrant: aue1t
+okta_cell_shot: on73
+
+image:
+  repository: registry.aue1d.internal
+  github_repo: okta-pony
+  tag: 1.40.0-7efc269
+  pullPolicy: IfNotPresent
+
+ports:
+- containerPort: 8080
+  protocol: TCP
+  name: http-port
+- containerPort: 1100
+  protocol: TCP
+  name: jmx-port
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 1024Mi
+  limits:
+    cpu: 500m
+    memory: 1024Mi
+
+livenessprobe:
+  tcpSocket:
+    port: 8080
+  initialDelaySeconds: 120
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 50
+  periodSeconds: 10
+
+readinessprobe:
+  httpGet:
+    path: /actuator/health
+    port: 8080
+  initialDelaySeconds: 120
+  timeoutSeconds: 2
+  successThreshold: 1
+  failureThreshold: 50
+  periodSeconds: 10
+
+env:
+  QUADRANT: "aue1t"
+  OKTA_CELL_SHORT_NAME: "on73"
+  JMX_REMOTE_PORT: "1100"
+  SPRING_CLOUD_CONFIG_LABEL: "master"
+  SPRING_CLOUD_CONFIG_ENABLED: "true"
+  SPRING_PROFILES_ACTIVE: "common_okta.ninja,common_installation_post,common_us_east_1,common_aue1t,common_cell_pre,common_on73,common_cell_post,pony_base,pony_on73"
+  CLOUD_CONFIG_BOOTSTRAP_FROM_S3_BUCKET: ""
+  BOOTSTRAP_DR_S3_AWS_REGION: "us-west-2"
+
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 4
+  targetCPUUtilizationPercentage: 80
+
+sslproxycontainer:
+  enabled: true
+  image:
+    repository: registry.aue1d.internal
+    github_repo: microservices-ssl-proxy
+    tag: 1.0.6_1675894440_b6aa507
+    pullPolicy: IfNotPresent
+  ports:
+  - containerPort: 18080
+    protocol: TCP
+    name: service-http
+  - containerPort: 11100
+    protocol: TCP
+    name: service-jmx
+  livenessProbe:
+    tcpSocket:
+      port: 18080
+    initialDelaySeconds: 120
+    timeoutSeconds: 5
+    successThreshold: 1
+    failureThreshold: 50
+    periodSeconds: 10
+  readinessProbe:
+    tcpSocket:
+      port: 18080
+    initialDelaySeconds: 120
+    timeoutSeconds: 2
+    successThreshold: 1
+    failureThreshold: 50
+    periodSeconds: 10
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1024Mi
+    limits:
+      cpu: 500m
+      memory: 1024Mi
+  env:
+    SERVICE_PORTS: "8080,1100"

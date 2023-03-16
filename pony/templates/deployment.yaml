@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.name }}
+  labels:
+    {{- include "pony.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.name }}
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.name }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}/{{ .Values.image.github_repo}}:{{ .Values.image.tag}}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.env }}
+          env:
+          {{- range $key, $value := .Values.env }}
+          - name: {{ $key }}
+            value: "{{ $value }}"
+          {{- end }}
+          {{- end }}
+          ports:
+            {{- toYaml .Values.ports | nindent 12 }}
+          livenessProbe:
+            {{- toYaml .Values.livenessprobe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.readinessprobe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+        {{- if .Values.sslproxycontainer.enabled }}
+        - name: ssl-sidecar-{{ .Values.name }}
+          image: "{{ .Values.sslproxycontainer.image.repository }}/{{ .Values.sslproxycontainer.image.github_repo}}:{{ .Values.sslproxycontainer.image.tag}}"
+          imagePullPolicy: {{ .Values.sslproxycontainer.image.pullPolicy }}
+          resources:
+            {{- toYaml .Values.sslproxycontainer.resources | nindent 12 }}
+          livenessProbe:
+            {{- toYaml .Values.sslproxycontainer.livenessprobe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.sslproxycontainer.readinessprobe | nindent 12 }}
+          {{- if .Values.sslproxycontainer.env }}
+          env:
+          {{- range $key, $value := .Values.sslproxycontainer.env }}
+          - name: {{ $key }}
+            value: "{{ $value }}"
+          {{- end }}
+          {{- end }}
+          ports:
+          {{- toYaml .Values.sslproxycontainer.ports | nindent 12 }}
+      {{- end }}
