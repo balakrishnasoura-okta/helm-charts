@@ -1,6 +1,7 @@
 
 replicaCount: 2
 name: pony
+namespace: default
 cell_quadrant: aue1t
 okta_cell_shot: on73
 
@@ -60,6 +61,34 @@ autoscaling:
   minReplicas: 1
   maxReplicas: 4
   targetCPUUtilizationPercentage: 80
+
+ingress:
+  enabled: true
+  host: "tc2-pony.aue1t.internal"
+  name: pony-ingress-alb
+  service_name: pony-service
+  port: 443
+  annotations:
+    alb.ingress.kubernetes.io/backend-protocol: HTTPS
+    alb.ingress.kubernetes.io/scheme: "internal"
+    alb.ingress.kubernetes.io/healthcheck-protocol: "HTTPS"
+    alb.ingress.kubernetes.io/healthcheck-port: "18080"
+    alb.ingress.kubernetes.io/healthcheck-path: "/actuator/health"
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/certificate-arn: "arn:aws:acm:us-east-1:777509510706:certificate/0a7d88a4-4018-48a7-9528-87563ca07133"
+
+
+service:
+  name: pony-service
+  type: NodePort
+  ports:
+  - port: 443
+    protocol: TCP
+    name: http-port
+    targetPort: 18080
+
+  
+
 
 sslproxycontainer:
   enabled: true
